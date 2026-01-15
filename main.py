@@ -3,6 +3,7 @@ from flask import Flask
 from config_db import Config
 from extensions import db
 from routes.acao import acao_bp 
+from routes.subacao import subacao_bp
 
 def create_app():
     app = Flask(__name__)
@@ -10,6 +11,7 @@ def create_app():
     db.init_app(app)
     
     app.register_blueprint(acao_bp, url_prefix='/acoes')
+    app.register_blueprint(subacao_bp, url_prefix='/subacoes')
 
     return app
 

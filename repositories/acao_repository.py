@@ -21,3 +21,9 @@ class AcaoRepository:
                 db.session.rollback()
                 print(f"Erro ao deletar ação: {e}")
                 return False
+    def get_all(self):
+        try:
+            acoes = Acao.query.all()
+            return acoes
+        except Exception as e:
+            raise e

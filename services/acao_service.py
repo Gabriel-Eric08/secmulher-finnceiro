@@ -27,3 +27,12 @@ class AcaoService:
             db.session.rollback()
             print(f"Erro ao deletar ação: {e}")
             return False
+        
+    def get_all(self):
+        try:
+            acoes = self.acao_repository.get_all()
+            return acoes
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao obter ações: {e}")
+            return []

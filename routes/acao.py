@@ -28,3 +28,18 @@ def delete(acao_id):
         return jsonify({'message': 'Ação deletada com sucesso'}), 200
     else:
         return jsonify({'message': 'Erro ao deletar ação'}), 500
+    
+@acao_bp.route('/all', methods=['GET'])
+def get_all_acoes():
+    try:
+        acoes = acao_service.get_all()
+        acoes_list = [{
+            'id': acao.id,
+            'codigo': acao.codigo,
+            'descricao': acao.descricao,
+            'orcamento_inicial': acao.orcamento_inicial,
+            'saldo_atual': acao.saldo_atual
+        } for acao in acoes]
+        return jsonify(acoes_list), 200
+    except Exception as e:
+        return jsonify({'message': 'Erro ao obter ações', 'error': str(e)}), 500

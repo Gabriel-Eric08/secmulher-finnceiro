@@ -20,3 +20,11 @@ def create_acao():
         return jsonify({'message': 'Ação criada com sucesso'}), 201
     else:
         return jsonify({'message': 'Erro ao criar ação'}), 500
+    
+@acao_bp.route('/delete/<int:acao_id>', methods=['DELETE'])
+def delete(acao_id):
+    sucesso = acao_service.delete(acao_id)
+    if sucesso:
+        return jsonify({'message': 'Ação deletada com sucesso'}), 200
+    else:
+        return jsonify({'message': 'Erro ao deletar ação'}), 500

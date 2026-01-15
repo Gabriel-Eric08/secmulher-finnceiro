@@ -10,3 +10,14 @@ class AcaoRepository:
         except Exception as e:
             db.session.rollback()
             raise e
+        
+    def delete(self, acao_id):
+            try:
+               acao = Acao.query.filter_by(id=acao_id).first()
+               db.session.delete(acao)
+               db.session.flush()
+               return True
+            except Exception as e:
+                db.session.rollback()
+                print(f"Erro ao deletar ação: {e}")
+                return False

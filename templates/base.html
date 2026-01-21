@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF | Secretaria da Mulher</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- Identidade Visual (CSS) --- */
+        :root {
+            --primary-purple: #6f42c1;
+            --dark-purple: #4e2c92;
+            --light-purple: #e0d4fc;
+            --gradient-purple: linear-gradient(135deg, #6f42c1 0%, #4e2c92 100%);
+            --bg-light: #f8f9fa;
+            --text-dark: #333;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            padding-top: 80px;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: var(--gradient-purple);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand { font-weight: 700; font-size: 1.4rem; }
+
+        .navbar-dark .navbar-nav .nav-link {
+            color: rgba(255,255,255,0.85);
+            font-weight: 500;
+            transition: all 0.3s;
+            margin-right: 10px;
+            border-radius: 5px;
+            padding: 8px 15px;
+        }
+
+        .navbar-dark .navbar-nav .nav-link:hover,
+        .navbar-dark .navbar-nav .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Cards & UI Elements */
+        .card-custom {
+            border: none;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.15);
+        }
+
+        .icon-circle {
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background-color: var(--light-purple); color: var(--dark-purple);
+            font-size: 1.5rem;
+        }
+
+        /* Tabelas */
+        .table-custom thead th {
+            background-color: var(--primary-purple);
+            color: white; font-weight: 500; border: none; padding: 12px;
+        }
+        .table-custom tbody tr:hover { background-color: rgba(111, 66, 193, 0.05); }
+
+        /* Botões */
+        .btn-purple {
+            background: var(--primary-purple); color: #fff; border: none;
+            padding: 10px 20px; border-radius: 8px; font-weight: 500; transition: all 0.3s;
+        }
+        .btn-purple:hover {
+            background: var(--dark-purple); color: #fff;
+            box-shadow: 0 4px 10px rgba(111, 66, 193, 0.3);
+        }
+
+        .text-purple { color: var(--primary-purple) !important; }
+        
+        /* Animação de entrada */
+        main { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home.dashboard') }}">
+                <i class="bi bi-bank2 me-2"></i>SGF | <span class="fw-light fs-6">Secretaria da Mulher</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{{ url_for('home.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if page == 'acoes' %}active{% endif %}" href="{{ url_for('acoes.listar_acoes') }}">Ações</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if page == 'subacoes' %}active{% endif %}" href="{{ url_for('subacoes.listar_subacoes') }}">Subações</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if page == 'movimentacoes' %}active{% endif %}" href="{{ url_for('movimentacoes.index') }}">Movimentações</a>
+                    </li>
+                </ul>
+                <div class="ms-3 text-white d-flex align-items-center" title="Perfil Admin">
+                    <div class="rounded-circle bg-white text-purple d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px;">
+                        A
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="container mt-4 mb-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

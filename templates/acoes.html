@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="text-purple fw-bold">Gerenciamento de Ações</h3>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item text-muted">Orçamento</li>
+                <li class="breadcrumb-item active text-purple">Ações</li>
+            </ol>
+        </nav>
+    </div>
+    <button class="btn btn-purple shadow" data-bs-toggle="modal" data-bs-target="#modalNovaAcao">
+        <i class="bi bi-plus-lg me-2"></i>Nova Ação
+    </button>
+</div>
+
+<div class="card card-custom overflow-hidden shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0 align-middle">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Código</th>
+                    <th>Nome da Ação</th>
+                    <th>Orçamento Inicial</th>
+                    <th class="text-center">Gerenciar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acao in acoes %}
+                <tr>
+                    <td class="ps-4 fw-bold text-purple">{{ acao.codigo }}</td>
+                    <td>{{ acao.descricao }}</td>
+                    <td class="text-muted">{{ acao.orcamento_inicial |format_currency }}</td> <td class="text-center">
+                        <div class="btn-group">
+                            <a href="{{ url_for('orcamento.consultar_acao', id=acao.id) }}" 
+                               class="btn btn-sm btn-outline-info border-0" 
+                               title="Consultar Saldo e Histórico">
+                                <i class="bi bi-graph-up-arrow fs-5"></i>
+                            </a>
+
+                            <a href="{{ url_for('acoes.deletar_acao', acao_id=acao.id) }}" 
+                               class="btn btn-sm btn-outline-danger border-0 ms-2" 
+                               title="Excluir"
+                               onclick="return confirm('Tem certeza que deseja excluir esta ação?');">
+                                <i class="bi bi-trash fs-5"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">Nenhuma ação cadastrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaAcao" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" action="{{ url_for('acoes.criar_acao') }}"> 
+            <div class="modal-header bg-soft-purple">
+                <h5 class="modal-title fw-bold text-purple">Cadastrar Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigo" class="form-control" placeholder="2024.XXX" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" name="descricao" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Orçamento Inicial (R$)</label>
+                    <input type="number" step="0.01" name="orcamento_inicial" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-purple">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

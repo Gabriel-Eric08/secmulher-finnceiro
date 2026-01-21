@@ -1,0 +1,171 @@
+<div class="container mt-4 fade-in">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="text-purple fw-bold">Ações Orçamentárias</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Ações</li>
+                    </ol>
+                </nav>
+            </div>
+            <button class="btn btn-purple shadow" data-bs-toggle="modal" data-bs-target="#novaAcaoModal">
+                <i class="bi bi-plus-lg me-2"></i>Nova Ação
+            </button>
+        </div>
+
+        <div class="card card-custom p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nome da Ação</th>
+                            <th>Valor Inicial</th>
+                            <th>Valor Atual</th>
+                            <th>Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="acoes-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="novaAcaoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-soft-purple">
+                    <h5 class="modal-title text-purple">Cadastrar Nova Ação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Código Identificador</label>
+                            <input type="text" class="form-control" placeholder="Ex: 2024.005">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome da Ação</label>
+                            <input type="text" class="form-control" placeholder="Descrição da ação">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Valor Inicial (R$)</label>
+                            <input type="number" class="form-control" placeholder="0,00">
+                            <div class="form-text text-danger">Atenção: O valor inicial não poderá ser alterado posteriormente.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-purple">Salvar Ação</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    ```
+
+---
+
+### 5. Movimentações (movimentacoes.html)
+A interface para realizar Remanejamentos e Créditos.
+
+```html
+    <div class="container mt-4 fade-in">
+        <h2 class="text-purple fw-bold mb-4">Movimentações Orçamentárias</h2>
+
+        <div class="card card-custom">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active text-purple" id="remanejamento-tab" data-bs-toggle="tab" data-bs-target="#remanejamento" type="button">
+                            <i class="bi bi-arrow-left-right me-2"></i>Remanejamento (Mesma Ação)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-purple" id="credito-tab" data-bs-toggle="tab" data-bs-target="#credito" type="button">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Crédito Orçamentário (Entre Ações)
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="tab-content" id="myTabContent">
+                    
+                    <div class="tab-pane fade show active" id="remanejamento">
+                        <div class="alert alert-light border-start border-4 border-info" role="alert">
+                            <i class="bi bi-info-circle-fill text-info me-2"></i>
+                            O valor total da Ação permanece inalterado. Apenas redistribuição entre subações.
+                        </div>
+                        <form class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Selecione a Ação</label>
+                                <select class="form-select">
+                                    <option selected>Selecione...</option>
+                                    <option value="1">2024.001 - Fortalecimento da Rede</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-danger">Origem (Cede recurso)</label>
+                                <select class="form-select border-danger">
+                                    <option>Subação 001.01</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-success">Destino (Recebe recurso)</label>
+                                <select class="form-select border-success">
+                                    <option>Subação 001.02</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Valor (R$)</label>
+                                <input type="number" class="form-control" placeholder="0,00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data</label>
+                                <input type="date" class="form-control">
+                            </div>
+                            <div class="col-12 text-end mt-4">
+                                <button type="submit" class="btn btn-purple px-5">Executar Remanejamento</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="credito">
+                         <div class="alert alert-light border-start border-4 border-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                            Transferência de recursos entre Ações distintas. Requer autorização especial.
+                        </div>
+                        <form class="row g-3">
+                             <div class="col-md-6">
+                                <label class="form-label text-danger">Ação de Origem</label>
+                                <select class="form-select">
+                                    <option>2024.001 - Fortalecimento</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-success">Ação de Destino</label>
+                                <select class="form-select">
+                                    <option>2024.002 - Capacitação</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Valor do Crédito (R$)</label>
+                                <input type="number" class="form-control">
+                            </div>
+                             <div class="col-md-6">
+                                <label class="form-label">Justificativa / Processo SEI</label>
+                                <input type="text" class="form-control">
+                            </div>
+                            <div class="col-12 text-end mt-4">
+                                <button type="submit" class="btn btn-purple px-5">Executar Crédito</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

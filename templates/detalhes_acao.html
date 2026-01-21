@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Ação{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 text-primary">{{ acao.codigo }}</h2>
+            <h5 class="text-muted">{{ acao.nome }}</h5>
+        </div>
+        
+        <form action="{{ url_for('orcamento.consultar_acao', id=acao.id) }}" method="get" class="d-flex gap-2 align-items-end">
+            <div>
+                <label class="form-label small text-muted mb-0">Data de Corte:</label>
+                <input type="date" name="data_corte" class="form-control" value="{{ data_atual }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i> Atualizar
+            </button>
+        </form>
+    </div>
+
+    <div class="row mb-4 text-center">
+        <div class="col-md">
+            <div class="card bg-light border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Orçamento Inicial</h6>
+                    <h4 class="fw-bold text-dark">R$ {{ resumo.orcamento }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md">
+            <div class="card border-0 shadow-sm h-100" style="background-color: #fff3cd;">
+                <div class="card-body">
+                    <h6 class="text-warning text-uppercase small fw-bold">Saldo Empenhado</h6>
+                    <h4 class="fw-bold text-warning">R$ {{ resumo.empenhado }}</h4>
+                    <small class="text-muted" style="font-size: 0.65rem;">(A LIQUIDAR)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md">
+            <div class="card border-0 shadow-sm h-100" style="background-color: #cff4fc;">
+                <div class="card-body">
+                    <h6 class="text-info text-uppercase small fw-bold">Saldo Liquidado</h6>
+                    <h4 class="fw-bold text-info">R$ {{ resumo.liquidado }}</h4>
+                    <small class="text-muted" style="font-size: 0.65rem;">(A PAGAR)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md">
+            <div class="card border-0 shadow-sm h-100" style="background-color: #d1e7dd;">
+                <div class="card-body">
+                    <h6 class="text-success text-uppercase small fw-bold">Total Pago</h6>
+                    <h4 class="fw-bold text-success">R$ {{ resumo.pago }}</h4>
+                    <small class="text-muted" style="font-size: 0.65rem;">(EFETIVADO)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md">
+            <div class="card border-0 shadow-sm h-100" style="background-color: #f8f9fa; border-left: 5px solid #6c757d !important;">
+                <div class="card-body">
+                    <h6 class="text-secondary text-uppercase small fw-bold">Saldo Disponível</h6>
+                    <h4 class="fw-bold text-secondary">R$ {{ resumo.disponivel }}</h4>
+                    <small class="text-muted" style="font-size: 0.65rem;">(ORÇAM. - EMPENHADO)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Detalhamento por PF</h5>
+            <a href="#" class="btn btn-sm btn-outline-primary">+ Novo PF</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 5%;">ID</th>
+                        <th style="width: 30%;">Descrição</th>
+                        <th class="text-end">V. Total PF</th>
+                        <th class="text-end text-warning">Sld. Empenhado</th>
+                        <th class="text-end text-info">Sld. Liquidado</th>
+                        <th class="text-end text-success">Total Pago</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pf in pfs %}
+                    <tr>
+                        <td><strong>{{ pf.id }}</strong></td>
+                        <td>{{ pf.descricao }}</td>
+                        <td class="text-end fw-bold">R$ {{ pf.valor_total }}</td>
+                        
+                        <td class="text-end text-warning">
+                            R$ {{ pf.valor_empenhado - pf.valor_liquidado }}
+                        </td>
+                        
+                        <td class="text-end text-info">
+                            R$ {{ pf.valor_liquidado - pf.valor_pago }}
+                        </td>
+                        
+                        <td class="text-end text-success">
+                            R$ {{ pf.valor_pago }}
+                        </td>
+                        
+                        <td class="text-center">
+                            <span class="badge rounded-pill 
+                                {% if 'PAGO' in pf.status.name %}bg-success
+                                {% elif 'LIQUIDADO' in pf.status.name %}bg-info text-dark
+                                {% elif 'EMPENHADO' in pf.status.name %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}">
+                                {{ pf.status.name }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="#" class="btn btn-sm btn-light border" title="Ver Detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Nenhum PF cadastrado nesta ação até a data selecionada.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

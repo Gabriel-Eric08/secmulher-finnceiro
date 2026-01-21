@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Movimentações Financeiras</h2>
+        <div>
+            <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalCriarPF">
+                <i class="bi bi-plus-circle"></i> Novo PF (Planejamento)
+            </button>
+            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalCriarTransferencia">
+                <i class="bi bi-arrow-left-right"></i> Nova Transferência
+            </button>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="pfs-tab" data-bs-toggle="tab" data-bs-target="#pfs" type="button">PFs (Planejamento)</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="transf-tab" data-bs-toggle="tab" data-bs-target="#transf" type="button">Transferências</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="myTabContent">
+        <div class="tab-pane fade show active" id="pfs">
+            <div class="card bg-light mb-3">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <label for="filtroAcaoSelect" class="col-form-label fw-bold"><i class="bi bi-funnel"></i> Filtrar por Ação:</label>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" id="filtroAcaoSelect" onchange="filtrarTabelaPfs()">
+                                <option value="TODAS">Todas as Ações</option>
+                                {% for acao in acoes %}
+                                    <option value="{{ acao.codigo }}">{{ acao.codigo }} - {{ acao.descricao }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="tabelaPfs">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Data</th>
+                            <th>Ação</th>
+                            <th>Subação</th>
+                            <th>Descrição</th>
+                            <th>Valor Total</th>
+                            <th>Status</th>
+                            <th>Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pf in pfs %}
+                        <tr data-acao="{{ pf.acao.codigo }}">
+                            <td>{{ pf.id }}</td>
+                            <td>{{ pf.data_cadastro.strftime('%d/%m/%Y') }}</td>
+                            <td><span class="badge bg-secondary">{{ pf.acao.codigo }}</span></td>
+                            <td>{{ pf.subacao.codigo if pf.subacao else '-' }}</td>
+                            <td>{{ pf.descricao }}</td>
+                            <td class="fw-bold text-primary">R$ {{ pf.valor_total | format_currency }}</td>
+                            <td>
+                                {% if pf.status.value == 'AGUARDANDO' %}
+                                    <span class="badge bg-info text-dark">Aguardando</span>
+                                {% elif 'EMPENHADO' in pf.status.value %}
+                                    <span class="badge bg-warning text-dark">{{ pf.status.value }}</span>
+                                {% elif 'LIQUIDADO' in pf.status.value %}
+                                    <span class="badge bg-primary">{{ pf.status.value }}</span>
+                                {% elif 'PAGO' in pf.status.value %}
+                                    <span class="badge bg-success">{{ pf.status.value }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ pf.status.value }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('movimentacoes.detalhe_pf', pf_id=pf.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-gear-fill"></i> Gerenciar
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center text-muted">Nenhum PF registrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="transf">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Origem (Saiu)</th>
+                            <th>Destino (Entrou)</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transf in transferencias %}
+                        <tr>
+                            <td>{{ transf.id }}</td>
+                            <td>{{ transf.data_transferencia.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge {% if transf.tipo == 'RO' %}bg-primary{% else %}bg-danger{% endif %}">
+                                    {{ 'Remanejamento' if transf.tipo == 'RO' else 'Crédito Adic.' }}
+                                </span>
+                            </td>
+                            <td><strong>{{ transf.acao_origem.codigo }}</strong></td>
+                            <td><strong>{{ transf.acao_destino.codigo }}</strong></td>
+                            <td class="fw-bold">R$ {{ transf.valor }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCriarPF" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('movimentacoes.criar_pf') }}" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo PF (Planejamento)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Ação Orçamentária</label>
+                <select class="form-select" name="acao_id" id="pf_acao_id" required>
+                    <option value="" selected disabled>Selecione a Ação...</option>
+                    {% for acao in acoes %}
+                        <option value="{{ acao.id }}">{{ acao.codigo }} - Saldo: R$ {{ acao.saldo_atual | format_currency }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Subação (Opcional)</label>
+                <select class="form-select" name="subacao_id" id="pf_subacao_id">
+                    <option value="" selected>Nenhuma (Usar saldo da Ação)</option>
+                    {% for sub in subacoes %}
+                        <option value="{{ sub.id }}" data-acao="{{ sub.acao_id }}" style="display: none;">
+                            {{ sub.codigo }} - {{ sub.descricao }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <input type="text" class="form-control" name="descricao" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Valor Total (R$)</label>
+                <input type="number" step="0.01" class="form-control" name="valor" required>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Salvar PF</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalCriarTransferencia" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form action="{{ url_for('movimentacoes.criar_transferencia') }}" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title">Nova Transferência</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 border-end">
+                  <h6 class="text-danger fw-bold mb-3">Origem (Saída)</h6>
+                  <div class="mb-3">
+                      <label class="form-label">Ação</label>
+                      <select class="form-select" name="acao_origem_id" id="acao_origem" required>
+                          <option value="" selected disabled>Selecione...</option>
+                          {% for acao in acoes %}
+                              <option value="{{ acao.id }}">{{ acao.codigo }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+                  <div class="mb-3">
+                      <label class="form-label">Subação</label>
+                      <select class="form-select" name="subacao_origem_id" id="sub_origem">
+                          <option value="">Ação Principal</option>
+                          {% for sub in subacoes %}
+                              <option value="{{ sub.id }}" data-acao="{{ sub.acao_id }}" style="display: none;">{{ sub.codigo }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+              <div class="col-md-6">
+                  <h6 class="text-success fw-bold mb-3">Destino (Entrada)</h6>
+                  <div class="mb-3">
+                      <label class="form-label">Ação</label>
+                      <select class="form-select" name="acao_destino_id" id="acao_destino" required>
+                          <option value="" selected disabled>Selecione...</option>
+                          {% for acao in acoes %}
+                              <option value="{{ acao.id }}">{{ acao.codigo }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+                  <div class="mb-3">
+                      <label class="form-label">Subação</label>
+                      <select class="form-select" name="subacao_destino_id" id="sub_destino">
+                          <option value="">Ação Principal</option>
+                          {% for sub in subacoes %}
+                              <option value="{{ sub.id }}" data-acao="{{ sub.acao_id }}" style="display: none;">{{ sub.codigo }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Valor (R$)</label>
+                    <input type="number" step="0.01" class="form-control" name="valor" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Tipo Detectado</label>
+                    <input type="text" class="form-control bg-light" id="tipo_texto" readonly>
+                    <input type="hidden" name="tipo" id="tipo_valor">
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Confirmar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+</div>
+
+<script>
+    // Função auxiliar para configurar filtros de subação
+    function setupSubacaoFilter(acaoId, subacaoId) {
+        const acaoSelect = document.getElementById(acaoId);
+        const subacaoSelect = document.getElementById(subacaoId);
+        
+        acaoSelect.addEventListener('change', function() {
+            const selectedAcao = this.value;
+            const options = subacaoSelect.querySelectorAll('option');
+            subacaoSelect.value = "";
+            options.forEach(opt => {
+                const parent = opt.getAttribute('data-acao');
+                opt.style.display = (!parent || parent === selectedAcao) ? 'block' : 'none';
+            });
+        });
+    }
+
+    // Inicializar filtros
+    setupSubacaoFilter('pf_acao_id', 'pf_subacao_id');
+    setupSubacaoFilter('acao_origem', 'sub_origem');
+    setupSubacaoFilter('acao_destino', 'sub_destino');
+
+    // Lógica de Detecção de Tipo (RO ou CA)
+    function detectarTipo() {
+        const o = document.getElementById('acao_origem').value;
+        const d = document.getElementById('acao_destino').value;
+        const txt = document.getElementById('tipo_texto');
+        const val = document.getElementById('tipo_valor');
+        if(o && d) {
+            const isRO = (o === d);
+            txt.value = isRO ? "Remanejamento (RO)" : "Crédito Adicional (CA)";
+            val.value = isRO ? "RO" : "CA";
+            txt.className = isRO ? "form-control text-primary fw-bold" : "form-control text-danger fw-bold";
+        }
+    }
+    document.getElementById('acao_origem').addEventListener('change', detectarTipo);
+    document.getElementById('acao_destino').addEventListener('change', detectarTipo);
+
+    // Filtro da Tabela Principal
+    function filtrarTabelaPfs() {
+        const filtro = document.getElementById('filtroAcaoSelect').value;
+        document.querySelectorAll('#tabelaPfs tbody tr').forEach(tr => {
+            tr.style.display = (filtro === 'TODAS' || tr.dataset.acao === filtro) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

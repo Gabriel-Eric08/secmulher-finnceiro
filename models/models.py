@@ -1,7 +1,9 @@
 from extensions import db
 from datetime import datetime
 from sqlalchemy.dialects.mysql import JSON
-
+from enum import Enum
+from decimal import Decimal  # <--- IMPORTANTE: Adicione este import
+import enum
 # ---------------------------------------
 # 1. Usuários e Autenticação
 # ---------------------------------------
@@ -27,20 +29,23 @@ class Acao(db.Model):
     __tablename__ = 'acoes'
 
     id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.String(20), unique=True, nullable=False)  # Ex: 202512
+    codigo = db.Column(db.String(50), unique=True, nullable=False)
     descricao = db.Column(db.String(255))
     
-    # DECIMAL(15,2) é crucial para dinheiro. Float gera erros de arredondamento.
-    orcamento_inicial = db.Column(db.Numeric(15, 2), default=0.00)
-    saldo_atual = db.Column(db.Numeric(15, 2), default=0.00)
+    # CORREÇÃO: Usar Decimal('0.00') no default
+    orcamento_inicial = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
+    saldo_atual = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
-    # Relacionamentos
-    # cascade='all, delete-orphan' remove as subações se a ação for deletada
     subacoes = db.relationship('Subacao', backref='acao', cascade='all, delete-orphan', lazy=True)
-    pfs = db.relationship('PF', backref='acao_pai', lazy=True)
+    pfs = db.relationship('PF', backref='acao', cascade='all, delete-orphan', lazy=True)
+
+
+    @property
+    def orcamento_atual(self):
+        return self.saldo_atual
 
     def __repr__(self):
         return f'<Acao {self.codigo} - Saldo: {self.saldo_atual}>'
@@ -52,16 +57,16 @@ class Subacao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     acao_id = db.Column(db.Integer, db.ForeignKey('acoes.id'), nullable=False)
     
-    codigo = db.Column(db.String(20), nullable=False)
+    codigo = db.Column(db.String(50), nullable=False)
     descricao = db.Column(db.String(255))
     
-    orcamento_inicial = db.Column(db.Numeric(15, 2), default=0.00)
-    saldo_atual = db.Column(db.Numeric(15, 2), default=0.00)
+    # CORREÇÃO: Usar Decimal('0.00') no default
+    orcamento_inicial = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
+    saldo_atual = db.Column(db.Numeric(15, 2), default=Decimal('0.00'))
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
-    # Garante que não exista código duplicado DENTRO da mesma ação
     __table_args__ = (db.UniqueConstraint('acao_id', 'codigo', name='uix_acao_codigo'),)
 
     def __repr__(self):
@@ -71,40 +76,56 @@ class Subacao(db.Model):
 # ---------------------------------------
 # 3. Movimentações Financeiras (PFs e Transferências)
 # ---------------------------------------
+class StatusPF(str, enum.Enum):
+    AGUARDANDO = "AGUARDANDO"
+    EMPENHADO_PARCIAL = "EMPENHADO_PARCIAL"
+    EMPENHADO_TOTAL = "EMPENHADO_TOTAL"
+    LIQUIDADO_PARCIAL = "LIQUIDADO_PARCIAL"
+    LIQUIDADO_TOTAL = "LIQUIDADO_TOTAL"
+    # Novos Status
+    PAGO_PARCIAL = "PAGO_PARCIAL"
+    PAGO_TOTAL = "PAGO_TOTAL"
+
+# 2. Na classe PF, adicione os campos de pagamento
 class PF(db.Model):
     __tablename__ = 'pfs'
+    # --- O ERRO ESTAVA AQUI (Faltava o ID) ---
+    id = db.Column(db.Integer, primary_key=True) 
+    # -----------------------------------------
+    
+    descricao = db.Column(db.String(500), nullable=False)
+    
+    # Valores
+    valor_total = db.Column(db.Numeric(10, 2), nullable=False)
+    valor_empenhado = db.Column(db.Numeric(10, 2), default=0.00)
+    valor_liquidado = db.Column(db.Numeric(10, 2), default=0.00)
+    valor_pago = db.Column(db.Numeric(10, 2), default=0.00)
 
-    id = db.Column(db.Integer, primary_key=True)
-    acao_id = db.Column(db.Integer, db.ForeignKey('acoes.id'), nullable=False)
-    subacao_id = db.Column(db.Integer, db.ForeignKey('subacoes.id'), nullable=True)
+    # Datas e Status
+    data_cadastro = db.Column(db.DateTime, default=datetime.now)
+    data_ultimo_empenho = db.Column(db.DateTime, nullable=True)
+    data_ultima_liquidacao = db.Column(db.DateTime, nullable=True)
+    data_ultimo_pagamento = db.Column(db.DateTime, nullable=True)
     
-    descricao = db.Column(db.String(255), nullable=False)
-    valor = db.Column(db.Numeric(15, 2), nullable=False)
-    
-    # Status da PF
-    status = db.Column(db.Enum('EMPENHADO', 'LIQUIDADO'), default='EMPENHADO')
-    
-    data_empenho = db.Column(db.DateTime, default=datetime.now)
-    data_liquidacao = db.Column(db.DateTime, nullable=True)
-    
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    status = db.Column(db.Enum(StatusPF), default=StatusPF.AGUARDANDO)
 
     # Relacionamentos
-    subacao = db.relationship('Subacao', backref='pfs')
-    usuario = db.relationship('Usuario')
+    acao_id = db.Column(db.Integer, db.ForeignKey('acoes.id'), nullable=False)
+    subacao_id = db.Column(db.Integer, db.ForeignKey('subacoes.id'), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+
+    subacao = db.relationship('Subacao', backref='pfs', lazy=True)
 
 
 class Transferencia(db.Model):
     __tablename__ = 'transferencias'
 
     id = db.Column(db.Integer, primary_key=True)
-    tipo = db.Column(db.Enum('CA', 'RO'), nullable=False) # CA = Crédito Adicional, RO = Remanejamento
+    tipo = db.Column(db.Enum('CA', 'RO'), nullable=False)
     
-    # Origem
     acao_origem_id = db.Column(db.Integer, db.ForeignKey('acoes.id'), nullable=False)
     subacao_origem_id = db.Column(db.Integer, db.ForeignKey('subacoes.id'), nullable=True)
     
-    # Destino
     acao_destino_id = db.Column(db.Integer, db.ForeignKey('acoes.id'), nullable=False)
     subacao_destino_id = db.Column(db.Integer, db.ForeignKey('subacoes.id'), nullable=True)
     
@@ -112,7 +133,6 @@ class Transferencia(db.Model):
     data_transferencia = db.Column(db.DateTime, default=datetime.now)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
 
-    # Relacionamentos auxiliares (opcionais, facilitam queries complexas)
     acao_origem = db.relationship('Acao', foreign_keys=[acao_origem_id])
     acao_destino = db.relationship('Acao', foreign_keys=[acao_destino_id])
 
@@ -121,10 +141,6 @@ class Transferencia(db.Model):
 # 4. O Coração: Ledger (Livro Razão)
 # ---------------------------------------
 class MovimentacaoLedger(db.Model):
-    """
-    Tabela imutável que registra toda alteração de saldo.
-    Usada para reconstruir o saldo em qualquer data passada.
-    """
     __tablename__ = 'movimentacoes_ledger'
 
     id = db.Column(db.BigInteger, primary_key=True)
@@ -137,15 +153,16 @@ class MovimentacaoLedger(db.Model):
         'PF_CRIACAO', 
         'PF_ESTORNO', 
         'TRANSF_ENTRADA', 
-        'TRANSF_SAIDA'
+        'TRANSF_SAIDA',
+        'EMPENHO',      # Adicionei para garantir que o enum bata com o service
+        'LIQUIDACAO',
+        'PAGAMENTO'   # Adicionei para garantir que o enum bata com o service
     ), nullable=False)
     
-    # Chaves estrangeiras opcionais (para saber o que gerou o movimento)
     pf_id = db.Column(db.Integer, db.ForeignKey('pfs.id'), nullable=True)
     transferencia_id = db.Column(db.Integer, db.ForeignKey('transferencias.id'), nullable=True)
     
-    # Valores matemáticos
-    valor_movimento = db.Column(db.Numeric(15, 2), nullable=False) # Negativo se saiu, Positivo se entrou
+    valor_movimento = db.Column(db.Numeric(15, 2), nullable=False)
     saldo_anterior = db.Column(db.Numeric(15, 2), nullable=False)
     saldo_novo = db.Column(db.Numeric(15, 2), nullable=False)
     
@@ -159,11 +176,10 @@ class LogAuditoria(db.Model):
     __tablename__ = 'logs_auditoria'
 
     id = db.Column(db.Integer, primary_key=True)
-    tabela_afetada = db.Column(db.String(50), nullable=False) # 'acoes', 'subacoes'
+    tabela_afetada = db.Column(db.String(50), nullable=False)
     registro_id = db.Column(db.Integer, nullable=False)
-    acao_realizada = db.Column(db.String(50), nullable=False) # 'UPDATE', 'DELETE'
+    acao_realizada = db.Column(db.String(50), nullable=False)
     
-    # JSON para guardar o "antes" e "depois" de forma flexível
     dados_anteriores = db.Column(JSON, nullable=True)
     dados_novos = db.Column(JSON, nullable=True)
     

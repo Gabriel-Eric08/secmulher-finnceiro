@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="text-purple fw-bold">Painel de Controle</h3>
+        <p class="text-muted">Visão geral da execução orçamentária.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card card-custom p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1 text-uppercase small fw-bold">Total de Ações</p>
+                    <h2 class="fw-bold text-dark">{{ total_acoes|default('0') }}</h2>
+                </div>
+                <div class="icon-circle"><i class="bi bi-folder2-open"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4">
+             <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1 text-uppercase small fw-bold">Orçamento Total</p>
+                    <h4 class="fw-bold text-dark">{{ orcamento_total|default('0')|format_currency }}</h4>
+                </div>
+                <div class="icon-circle"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card card-custom p-4">
+            <h5 class="text-purple fw-bold mb-4">Evolução de Gastos</h5>
+            <div style="height: 300px;">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-custom p-4">
+            <h5 class="text-purple fw-bold mb-4">Distribuição por Ação</h5>
+            <div style="height: 300px; display: flex; justify-content: center;">
+                <canvas id="doughnutChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Configuração dos Gráficos Chart.js
+    // Dados fictícios iniciais para não quebrar o visual
+    
+    // 1. Gráfico de Linha (Evolução de Gastos)
+    const ctxLine = document.getElementById('lineChart').getContext('2d');
+    new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+            datasets: [{
+                label: 'Execução (R$)',
+                data: [12000, 19000, 3000, 5000, 2000, 3000], // Futuramente virá do Flask
+                borderColor: '#6f42c1',
+                backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 2. Gráfico de Rosca (Distribuição)
+    const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+    new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+            labels: ['Ação 1', 'Ação 2', 'Ação 3'], // Futuramente virá do Flask
+            datasets: [{
+                data: [30, 50, 20],
+                backgroundColor: ['#6f42c1', '#e0d4fc', '#4e2c92'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3 class="text-purple fw-bold mb-4">Detalhamento de Subações</h3>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <label class="form-label text-muted small fw-bold">FILTRAR POR AÇÃO VINCULADA</label>
+            <select class="form-select border-0 bg-light" id="filtro-acao" onchange="filtrarTabela()">
+                <option value="all">Todas as Ações</option>
+                {% for acao in acoes %}
+                <option value="{{ acao.id }}">{{ acao.codigo }} - {{ acao.descricao }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="col-md-6 d-flex align-items-end justify-content-end">
+        <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#modalNovaSubacao">
+            <i class="bi bi-plus-lg me-2"></i>Nova Subação
+        </button>
+    </div>
+</div>
+
+<div class="card card-custom overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0 align-middle" id="tabela-subacoes">
+            <thead>
+                <tr>
+                    <th>Cód.</th>
+                    <th>Ação Pai</th>
+                    <th>Nome da Atividade</th>
+                    <th>Orçamento Inicial</th>
+                    <th class="text-center">Opções</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subacoes %}
+                <tr data-acao-id="{{ sub.acao_id }}">
+                    <td class="fw-bold">{{ sub.codigo }}</td>
+                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ sub.acao.codigo }}</span></td>
+                    <td>{{ sub.descricao }}</td>
+                    <td class="text-muted">{{ sub.orcamento_inicial|format_currency }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('subacoes.delete_subacao', subacao_id=sub.id) }}" 
+                           class="btn btn-sm btn-outline-danger border-0"
+                           onclick="return confirm('Excluir esta subação?');">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-3 text-muted">Nenhuma subação cadastrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaSubacao" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" action="{{ url_for('subacoes.criar_subacao') }}">
+            <div class="modal-header bg-soft-purple">
+                <h5 class="modal-title fw-bold text-purple">Nova Subação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Vincular à Ação *</label>
+                    <select class="form-select" name="acao_id" required>
+                        <option value="" selected disabled>Selecione a Ação Pai...</option>
+                        {% for acao in acoes %}
+                        <option value="{{ acao.id }}">{{ acao.codigo }} - {{ acao.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Código da Subação *</label>
+                    <input type="text" name="codigo" class="form-control" placeholder="Ex: 001" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descrição da Atividade *</label>
+                    <input type="text" name="descricao" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Orçamento Inicial (R$) *</label>
+                    <input type="number" step="0.01" name="orcamento_inicial" class="form-control" placeholder="0.00" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-purple">Salvar Subação</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function filtrarTabela() {
+        const filtro = document.getElementById('filtro-acao').value;
+        const linhas = document.querySelectorAll('#tabela-subacoes tbody tr');
+        
+        linhas.forEach(row => {
+            const acaoId = row.getAttribute('data-acao-id');
+            // Se o filtro for 'all' ou o ID da linha for igual ao filtro, mostra. Se não, esconde.
+            if (filtro === 'all' || acaoId === filtro) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,36 +1,83 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from services.subacao_service import SubacaoService
+from services.acao_service import AcaoService
 
-subacao_service= SubacaoService()
+# Configuração dos Serviços
+subacao_service = SubacaoService()
+acao_service = AcaoService()
 
-subacao_bp = Blueprint('subacao_bp', __name__)
+# ATENÇÃO: O nome do blueprint deve ser 'subacoes' para bater com url_for('subacoes.xyz')
+subacao_bp = Blueprint('subacoes', __name__)
 
-@subacao_bp.route('/create', methods=['POST'])
-def create():
-    data = request.get_json()
-    codigo = data.get('codigo')
-    descricao = data.get('descricao')
-    orcamento_inicial = data.get('orcamento_inicial')
-    acao_id = data.get('acao_id')
+# 1. ROTA DE LISTAGEM (GET)
+@subacao_bp.route('/', methods=['GET'])
+def listar_subacoes():
     try:
-        nova_subacao = subacao_service.create_subacao(codigo, descricao, orcamento_inicial, acao_id)
-        return jsonify({
-            'id': nova_subacao.id,
-            'codigo': nova_subacao.codigo,
-            'descricao': nova_subacao.descricao,
-            'orcamento_inicial': nova_subacao.orcamento_inicial,
-            'saldo_atual': nova_subacao.saldo_atual,
-            'acao_id': nova_subacao.acao_id
-        }), 201
+        # Busca todas as subações para a tabela
+        lista_subacoes = subacao_service.get_all()
+        
+        # Busca todas as ações para preencher o "Select/Dropdown" do formulário
+        lista_acoes = acao_service.get_all()
+        
+        return render_template(
+            'subacoes.html', 
+            page='subacoes', 
+            subacoes=lista_subacoes,
+            acoes=lista_acoes 
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-@subacao_bp.route('/delete/<int:subacao_id>', methods=['DELETE'])
-def delete(subacao_id):
+        flash(f'Erro ao carregar dados: {str(e)}', 'danger')
+        return render_template('subacoes.html', page='subacoes', subacoes=[], acoes=[])
+
+# 2. ROTA DE CRIAÇÃO (POST)
+@subacao_bp.route('/criar', methods=['POST'])
+def criar_subacao():
+    # Pega dados do formulário HTML
+    codigo = request.form.get('codigo')
+    descricao = request.form.get('descricao')
+    orcamento_inicial = request.form.get('orcamento_inicial')
+    acao_id = request.form.get('acao_id')
+
+    # Validação simples de campos vazios
+    if not all([codigo, descricao, orcamento_inicial, acao_id]):
+        flash('Preencha todos os campos obrigatórios!', 'warning')
+        return redirect(url_for('subacoes.listar_subacoes'))
+
     try:
-        sucesso = subacao_service.delete_subacao(subacao_id)
+        # Chama o método .create do serviço
+        # Note que não precisamos converter para float aqui, o service já trata com Decimal
+        sucesso = subacao_service.create(
+            codigo=codigo,
+            descricao=descricao,
+            orcamento_inicial=orcamento_inicial,
+            acao_id=int(acao_id)
+        )
+        
         if sucesso:
-            return jsonify({'message': 'Subação deletada com sucesso.'}), 200
+            flash('Subação criada com sucesso!', 'success')
         else:
-            return jsonify({'error': 'Falha ao deletar subação.'}), 500
+            # Caso o service retorne False por outros motivos (ex: erro no repository)
+            flash('Erro ao criar subação. Verifique os dados e tente novamente.', 'danger')
+            
+    except ValueError as e:
+        # CAPTURA A REGRA DE NEGÓCIO: Aqui aparecerá "Orçamento excedido!..."
+        flash(str(e), 'warning')
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Erros inesperados de sistema
+        flash(f'Erro interno: {str(e)}', 'danger')
+
+    return redirect(url_for('subacoes.listar_subacoes'))
+# 3. ROTA DE EXCLUSÃO
+@subacao_bp.route('/delete/<int:subacao_id>')
+def delete_subacao(subacao_id):
+    try:
+        # Chama o método .delete do serviço
+        if subacao_service.delete(subacao_id):
+            flash('Subação removida com sucesso.', 'success')
+        else:
+            flash('Erro ao remover subação (Verifique se há movimentações financeiras vinculadas).', 'danger')
+    except Exception as e:
+        flash(f'Erro ao deletar: {str(e)}', 'danger')
+        
+    return redirect(url_for('subacoes.listar_subacoes'))

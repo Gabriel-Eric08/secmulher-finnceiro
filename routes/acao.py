@@ -1,45 +1,62 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from services.acao_service import AcaoService
 
+# Configuração do Blueprint
+# O nome 'acoes' é o que usamos no HTML: url_for('acoes.criar_acao')
+acao_bp = Blueprint('acoes', __name__)
 acao_service = AcaoService()
 
-acao_bp = Blueprint('acoes', __name__)
-
-@acao_bp.route('/create', methods=['POST'])
-def create_acao():
-    data = request.get_json()
-    codigo = data.get('codigo')
-    descricao = data.get('descricao')
-    orcamento_inicial = data.get('orcamento_inicial')
-
-    if not all([codigo, descricao, orcamento_inicial]):
-        return jsonify({'sucess':False,'message': 'Dados incompletos'}), 400
-
-    sucesso = acao_service.create(codigo, descricao, orcamento_inicial)
-    if sucesso:
-        return jsonify({'message': 'Ação criada com sucesso'}), 201
-    else:
-        return jsonify({'message': 'Erro ao criar ação'}), 500
-    
-@acao_bp.route('/delete/<int:acao_id>', methods=['DELETE'])
-def delete(acao_id):
-    sucesso = acao_service.delete(acao_id)
-    if sucesso:
-        return jsonify({'message': 'Ação deletada com sucesso'}), 200
-    else:
-        return jsonify({'message': 'Erro ao deletar ação'}), 500
-    
-@acao_bp.route('/all', methods=['GET'])
-def get_all_acoes():
+# 1. ROTA DE LISTAGEM (GET)
+@acao_bp.route('/', methods=['GET'])
+def listar_acoes():
     try:
-        acoes = acao_service.get_all()
-        acoes_list = [{
-            'id': acao.id,
-            'codigo': acao.codigo,
-            'descricao': acao.descricao,
-            'orcamento_inicial': acao.orcamento_inicial,
-            'saldo_atual': acao.saldo_atual
-        } for acao in acoes]
-        return jsonify(acoes_list), 200
+        lista_acoes = acao_service.get_all()
+        return render_template('acoes.html', page='acoes', acoes=lista_acoes)
     except Exception as e:
-        return jsonify({'message': 'Erro ao obter ações', 'error': str(e)}), 500
+        flash(f'Erro ao carregar ações: {str(e)}', 'danger')
+        return render_template('acoes.html', page='acoes', acoes=[])
+
+# 2. ROTA DE CRIAÇÃO (POST)
+@acao_bp.route('/criar', methods=['POST'])
+def criar_acao():
+    codigo = request.form.get('codigo')
+    descricao = request.form.get('descricao')
+    orcamento_inicial = request.form.get('orcamento_inicial')
+
+    # Validação simples
+    if not all([codigo, descricao, orcamento_inicial]):
+        flash('Todos os campos são obrigatórios!', 'warning')
+        return redirect(url_for('acoes.listar_acoes'))
+
+    try:
+        sucesso = acao_service.create(
+            codigo=codigo, 
+            descricao=descricao, 
+            orcamento_inicial=float(orcamento_inicial)
+        )
+        
+        if sucesso:
+            flash('Ação criada com sucesso!', 'success')
+        else:
+            flash('Erro ao criar: Verifique se o código já existe.', 'danger')
+            
+    except ValueError:
+        flash('O orçamento inicial deve ser um número válido.', 'warning')
+    except Exception as e:
+        flash(f'Erro interno: {str(e)}', 'danger')
+        
+    return redirect(url_for('acoes.listar_acoes'))
+
+# 3. ROTA DE EXCLUSÃO
+# Atenção: No HTML, o link deve ser url_for('acoes.deletar_acao', acao_id=x)
+@acao_bp.route('/deletar/<int:acao_id>')
+def deletar_acao(acao_id):
+    try:
+        if acao_service.delete(acao_id):
+            flash('Ação removida com sucesso.', 'success')
+        else:
+            flash('Não foi possível remover. Verifique se a ação possui Subações ou Movimentações vinculadas.', 'danger')
+    except Exception as e:
+        flash(f'Erro ao deletar: {str(e)}', 'danger')
+        
+    return redirect(url_for('acoes.listar_acoes'))

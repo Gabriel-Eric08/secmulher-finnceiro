@@ -21,3 +21,9 @@ class SubacaoRepository:
                 db.session.rollback()
                 print(f"Erro ao deletar subação: {e}")
                 return False
+    def get_all(self):
+        try:
+            subacoes = Subacao.query.all()
+            return subacoes
+        except Exception as e:
+            raise e

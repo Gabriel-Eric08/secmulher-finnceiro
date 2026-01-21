@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary">Consulta de Ação</h2>
+            <h5 class="text-muted">{{ entidade.codigo }} - {{ entidade.descricao }}</h5>
+        </div>
+        <a href="{{ url_for('acoes.listar_acoes') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar
+</a> <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body bg-light">
+            <form method="GET" class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Data de Referência</label>
+                    <input type="date" class="form-control" name="data" value="{{ data_selecionada }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Consultar
+                    </button>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">Mostrando saldo calculado até o final do dia selecionado.</small>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary h-100">
+                <div class="card-header bg-primary text-white">Orçamento Inicial</div>
+                <div class="card-body">
+                    <h3 class="card-title">R$ {{ entidade.orcamento_inicial }}</h3>
+                    <p class="card-text text-muted">Valor fixado</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-success h-100">
+                <div class="card-header bg-success text-white">Saldo Disponível ({{ data_selecionada|join('/') }})</div>
+                <div class="card-body">
+                    <h3 class="card-title fw-bold">R$ {{ saldo_data }}</h3>
+                    <p class="card-text text-muted">Na data selecionada</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-info h-100">
+                <div class="card-header bg-info text-white">% Utilizado</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ porcentagem }}%</h3>
+                    <div class="progress mt-2" style="height: 20px;">
+                        <div class="progress-bar 
+                            {% if porcentagem < 50 %} bg-success 
+                            {% elif porcentagem < 80 %} bg-warning 
+                            {% else %} bg-danger {% endif %}" 
+                            role="progressbar" 
+                            style="width: {{ porcentagem }}%">
+                        </div>
+                    </div>
+                    <p class="card-text text-muted mt-2">Do orçamento inicial</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

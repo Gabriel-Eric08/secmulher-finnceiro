@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-info">Consulta de Subação</h2>
+            <h5 class="text-muted">{{ entidade.codigo }} - {{ entidade.descricao }}</h5>
+            <span class="badge bg-secondary">Ação Pai: {{ entidade.acao.codigo }}</span>
+        </div>
+        <a href="{{ url_for('orcamento.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body bg-light">
+            <form method="GET" class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Data de Referência</label>
+                    <input type="date" class="form-control" name="data" value="{{ data_selecionada }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-info text-white w-100">
+                        <i class="bi bi-search"></i> Consultar
+                    </button>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">Cálculo baseado no histórico de movimentações (Ledger).</small>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="card border-secondary h-100">
+                <div class="card-header bg-secondary text-white">Orçamento Inicial</div>
+                <div class="card-body">
+                    <h3 class="card-title">R$ {{ entidade.orcamento_inicial }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-success h-100">
+                <div class="card-header bg-success text-white">Saldo Disponível</div>
+                <div class="card-body">
+                    <h3 class="card-title fw-bold">R$ {{ saldo_data }}</h3>
+                    <p class="card-text text-muted">Data: {{ data_selecionada }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-dark h-100">
+                <div class="card-header bg-dark text-white">% Utilizado</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ porcentagem }}%</h3>
+                    <div class="progress mt-2" style="height: 20px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                             role="progressbar" 
+                             style="width: {{ porcentagem }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
